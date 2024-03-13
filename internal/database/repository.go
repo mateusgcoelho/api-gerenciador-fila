@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -11,6 +12,14 @@ import (
 var (
 	dbPool *pgxpool.Pool
 )
+
+func GetDbPool() *pgxpool.Pool {
+	if dbPool == nil {
+		log.Fatal("Instancia de banco de dados não foi encontrada.")
+	}
+
+	return dbPool
+}
 
 func InitializeDatabase() error {
 	databaseUrl := getDatabaseUrl()
