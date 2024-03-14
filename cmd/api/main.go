@@ -17,5 +17,9 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	router.Initialize()
+	dbPool := database.GetDbPool()
+
+	router.Initialize(dbPool)
+
+	defer dbPool.Close()
 }
