@@ -18,4 +18,9 @@ func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 		permissions.OnlyPermission(permissions.PermissionCreateUser),
 		handleCreateUser(userRepository),
 	)
+	r.GET(
+		"/",
+		permissions.OnlyPermission(permissions.PermissionSeeAllUsers),
+		handleGetUsers(userRepository),
+	)
 }

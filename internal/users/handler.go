@@ -33,3 +33,20 @@ func handleCreateUser(userRepository IUserRepository) gin.HandlerFunc {
 		})
 	}
 }
+
+func handleGetUsers(userRepository IUserRepository) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		users, err := userRepository.getUsers()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
+				Message: err.Error(),
+				Data:    nil,
+			})
+			return
+		}
+
+		c.JSON(http.StatusCreated, utils.DefaultResponse{
+			Data: users,
+		})
+	}
+}

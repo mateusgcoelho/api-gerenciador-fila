@@ -10,6 +10,7 @@ import (
 
 type IUserRepository interface {
 	createUser(data CreateUserDto) (*User, error)
+	getUsers() ([]User, error)
 	getUserById(id int) (*User, error)
 	getUserByCodeOrEmail(code string, email string) (*User, error)
 }
@@ -120,4 +121,42 @@ func (r userRepositoryImpl) getUserByCodeOrEmail(code string, email string) (*Us
 	}
 
 	return user, nil
+}
+
+func (r userRepositoryImpl) getUsers() ([]User, error) {
+	sql := `
+		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
+		FROM usuarios
+	`
+
+	rows, err := r.db.Query(
+		context.Background(),
+		sql,
+	)
+	if err != nil {
+		return nil, errors.New("Não foi possível encontrar usuários.")
+	}
+	defer rows.Close()
+
+	users := []User{}
+
+	for rows.Next() {
+		user := User{}
+		if err := rows.Scan(
+			&user.Id,
+			&user.Nome,
+			&user.Email,
+			&user.Senha,
+			&user.CodigoRegistro,
+			&user.Permissoes,
+			&user.DataCriacao,
+			&user.DataAtualizacao,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
 }
