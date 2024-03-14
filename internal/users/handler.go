@@ -1,7 +1,6 @@
 package users
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -82,7 +81,6 @@ func handleLogin(userRepository IUserRepository, authRepository auth.IAuthReposi
 		}
 
 		isValid := authRepository.ComparePasswords(user.Senha, data.Senha)
-		fmt.Println(isValid)
 
 		if !isValid {
 			c.JSON(http.StatusBadRequest, utils.DefaultResponse{

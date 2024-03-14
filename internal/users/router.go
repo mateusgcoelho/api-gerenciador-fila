@@ -16,11 +16,13 @@ func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 	routerUsers := g.Group("/users")
 	routerUsers.POST(
 		"/",
+		auth.OnlyAuthenticated(authRepository),
 		permissions.OnlyPermission(permissions.PermissionCreateUser),
 		handleCreateUser(userRepository),
 	)
 	routerUsers.GET(
 		"/",
+		auth.OnlyAuthenticated(authRepository),
 		permissions.OnlyPermission(permissions.PermissionSeeAllUsers),
 		handleGetUsers(userRepository),
 	)
@@ -28,7 +30,6 @@ func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 	routerAuth := g.Group("/auth")
 	routerAuth.POST(
 		"/",
-		permissions.OnlyPermission(permissions.PermissionCreateUser),
 		handleLogin(userRepository, authRepository),
 	)
 }

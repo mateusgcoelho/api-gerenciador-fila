@@ -12,6 +12,7 @@ import (
 type IAuthRepository interface {
 	GenerateJwtToken(payload JwtPayloadDto) (string, error)
 	HashPassword(password string) (string, error)
+	ValidateToken(bearerToken string) (JwtPayloadDto, error)
 	ComparePasswords(hashedPassword, attemptedPassword string) bool
 }
 
@@ -23,7 +24,7 @@ func NewAuthRepository() IAuthRepository {
 }
 
 func (r authRepositoryImpl) GenerateJwtToken(payload JwtPayloadDto) (string, error) {
-	claims := claims{
+	claims := JwtPayloadDto{
 		Id:         payload.Id,
 		Permissoes: payload.Permissoes,
 		StandardClaims: jwt.StandardClaims{
@@ -47,4 +48,20 @@ func (r authRepositoryImpl) HashPassword(password string) (string, error) {
 
 func (r authRepositoryImpl) ComparePasswords(hashedPassword, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
+}
+
+func (r authRepositoryImpl) ValidateToken(bearerToken string) (JwtPayloadDto, error) {
+	token, err := jwt.ParseWithClaims(bearerToken, &JwtPayloadDto{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
+	})
+	if err != nil {
+		return JwtPayloadDto{}, err
+	}
+
+	payload, ok := token.Claims.(*JwtPayloadDto)
+	if !ok || !token.Valid {
+		return JwtPayloadDto{}, errors.New("Token de autenticação inválido.")
+	}
+
+	return *payload, nil
 }
