@@ -3,5 +3,5 @@ package permissions
 type Permission uint8
 
 const (
-	CreateUserPermission Permission = 00000001
+	PermissionCreateUser Permission = 1 << 0 // 00000001
 )

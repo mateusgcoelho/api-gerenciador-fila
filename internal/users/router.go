@@ -15,7 +15,7 @@ func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 
 	r.POST(
 		"/",
-		permissions.OnlyPermission(permissions.CreateUserPermission),
+		permissions.OnlyPermission(permissions.PermissionCreateUser),
 		handleCreateUser(userRepository),
 	)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal/auth"
 )
 
 type IUserRepository interface {
@@ -34,11 +35,13 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 
 	sql := "INSERT INTO usuarios (nome, email, senha, codigo_registro) VALUES ($1, $2, $3, $4) RETURNING id"
 
+	passwordHashed := auth.HashPassword(data.Senha)
+
 	var id int
 	rows, err := r.db.Query(
 		context.Background(),
 		sql,
-		data.Nome, data.Email, data.Senha, data.CodigoRegistro,
+		data.Nome, data.Email, passwordHashed, data.CodigoRegistro,
 	)
 	if err != nil {
 		return nil, errors.New("Não foi possível criar usuário.")
@@ -55,7 +58,7 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 }
 
 func (r userRepositoryImpl) getUserById(id int) (*User, error) {
-	sql := "SELECT nome, email, senha, codigo_registro FROM usuarios AS u WHERE u.id = $1"
+	sql := "SELECT nome, email, senha, codigo_registro, permissoes FROM usuarios AS u WHERE u.id = $1"
 
 	var user *User = nil
 	rows, err := r.db.Query(
@@ -75,6 +78,7 @@ func (r userRepositoryImpl) getUserById(id int) (*User, error) {
 			&user.Email,
 			&user.Senha,
 			&user.CodigoRegistro,
+			&user.Permissoes,
 		); err != nil {
 			return nil, err
 		}
