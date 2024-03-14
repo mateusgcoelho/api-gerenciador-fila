@@ -16,12 +16,14 @@ type IUserRepository interface {
 }
 
 type userRepositoryImpl struct {
-	db *pgxpool.Pool
+	dbPool         *pgxpool.Pool
+	authRepository auth.IAuthRepository
 }
 
-func NewUserRepository(db *pgxpool.Pool) IUserRepository {
+func NewUserRepository(dbPool *pgxpool.Pool, authRepository auth.IAuthRepository) IUserRepository {
 	return userRepositoryImpl{
-		db: db,
+		dbPool:         dbPool,
+		authRepository: authRepository,
 	}
 }
 
@@ -34,12 +36,15 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 		return nil, errors.New("Usuário já cadastrado com codigo de registro e/ou e-mail.")
 	}
 
+	passwordHashed, err := r.authRepository.HashPassword(data.Senha)
+	if err != nil {
+		return nil, err
+	}
+
 	sql := "INSERT INTO usuarios (nome, email, senha, codigo_registro) VALUES ($1, $2, $3, $4) RETURNING id"
 
-	passwordHashed := auth.HashPassword(data.Senha)
-
 	var id int
-	rows, err := r.db.Query(
+	rows, err := r.dbPool.Query(
 		context.Background(),
 		sql,
 		data.Nome, data.Email, passwordHashed, data.CodigoRegistro,
@@ -65,7 +70,7 @@ func (r userRepositoryImpl) getUserById(id int) (*User, error) {
 	`
 
 	var user *User = nil
-	rows, err := r.db.Query(
+	rows, err := r.dbPool.Query(
 		context.Background(),
 		sql,
 		id,
@@ -95,10 +100,14 @@ func (r userRepositoryImpl) getUserById(id int) (*User, error) {
 }
 
 func (r userRepositoryImpl) getUserByCodeOrEmail(code string, email string) (*User, error) {
-	sql := "SELECT nome, email, senha, codigo_registro FROM usuarios AS u WHERE u.codigo_registro = $1 OR u.email = $2"
+	sql := `
+		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
+		FROM usuarios AS u
+		WHERE u.codigo_registro = $1 OR u.email = $2
+	`
 
 	var user *User = nil
-	rows, err := r.db.Query(
+	rows, err := r.dbPool.Query(
 		context.Background(),
 		sql,
 		code, email,
@@ -111,10 +120,14 @@ func (r userRepositoryImpl) getUserByCodeOrEmail(code string, email string) (*Us
 	for rows.Next() {
 		user = &User{}
 		if err := rows.Scan(
+			&user.Id,
 			&user.Nome,
 			&user.Email,
 			&user.Senha,
 			&user.CodigoRegistro,
+			&user.Permissoes,
+			&user.DataCriacao,
+			&user.DataAtualizacao,
 		); err != nil {
 			return nil, err
 		}
@@ -129,7 +142,7 @@ func (r userRepositoryImpl) getUsers() ([]User, error) {
 		FROM usuarios
 	`
 
-	rows, err := r.db.Query(
+	rows, err := r.dbPool.Query(
 		context.Background(),
 		sql,
 	)
