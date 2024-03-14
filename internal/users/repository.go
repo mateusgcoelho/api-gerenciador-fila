@@ -58,7 +58,10 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 }
 
 func (r userRepositoryImpl) getUserById(id int) (*User, error) {
-	sql := "SELECT nome, email, senha, codigo_registro, permissoes FROM usuarios AS u WHERE u.id = $1"
+	sql := `
+		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
+		FROM usuarios AS u WHERE u.id = $1
+	`
 
 	var user *User = nil
 	rows, err := r.db.Query(
@@ -74,11 +77,14 @@ func (r userRepositoryImpl) getUserById(id int) (*User, error) {
 	for rows.Next() {
 		user = &User{}
 		if err := rows.Scan(
+			&user.Id,
 			&user.Nome,
 			&user.Email,
 			&user.Senha,
 			&user.CodigoRegistro,
 			&user.Permissoes,
+			&user.DataCriacao,
+			&user.DataAtualizacao,
 		); err != nil {
 			return nil, err
 		}
