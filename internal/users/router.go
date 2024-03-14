@@ -13,16 +13,14 @@ func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 		userRepository IUserRepository      = NewUserRepository(dbPool, authRepository)
 	)
 
-	routerUsers := g.Group("/users")
+	routerUsers := g.Group("/users", auth.OnlyAuthenticated(authRepository))
 	routerUsers.POST(
 		"/",
-		auth.OnlyAuthenticated(authRepository),
 		permissions.OnlyPermission(permissions.PermissionCreateUser),
 		handleCreateUser(userRepository),
 	)
 	routerUsers.GET(
 		"/",
-		auth.OnlyAuthenticated(authRepository),
 		permissions.OnlyPermission(permissions.PermissionSeeAllUsers),
 		handleGetUsers(userRepository),
 	)

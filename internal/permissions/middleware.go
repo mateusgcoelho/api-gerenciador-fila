@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
 func OnlyPermission(permissions ...Permission) gin.HandlerFunc {
@@ -19,7 +20,9 @@ func OnlyPermission(permissions ...Permission) gin.HandlerFunc {
 		}
 
 		if !hasPermission {
-			c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized"})
+			c.JSON(http.StatusForbidden, utils.DefaultResponse{
+				Message: "Sem permissão para executar essa ação.",
+			})
 			c.Abort()
 			return
 		}

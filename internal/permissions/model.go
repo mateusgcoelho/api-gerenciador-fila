@@ -4,5 +4,5 @@ type Permission uint8
 
 const (
 	PermissionCreateUser  Permission = 1 << 0 // 00000001
-	PermissionSeeAllUsers Permission = 1 << 2 // 00000010
+	PermissionSeeAllUsers Permission = 1 << 1 // 00000010
 )
