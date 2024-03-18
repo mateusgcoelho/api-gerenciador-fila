@@ -15,19 +15,19 @@ type IUserRepository interface {
 	getUserByCodeOrEmail(code string, email string) (*User, error)
 }
 
-type userRepositoryImpl struct {
+type userRepository struct {
 	dbPool         *pgxpool.Pool
 	authRepository auth.IAuthRepository
 }
 
 func NewUserRepository(dbPool *pgxpool.Pool, authRepository auth.IAuthRepository) IUserRepository {
-	return userRepositoryImpl{
+	return userRepository{
 		dbPool:         dbPool,
 		authRepository: authRepository,
 	}
 }
 
-func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
+func (r userRepository) createUser(data CreateUserDto) (*User, error) {
 	user, err := r.getUserByCodeOrEmail(data.CodigoRegistro, data.Email)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,6 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 
 	sql := "INSERT INTO usuarios (nome, email, senha, codigo_registro) VALUES ($1, $2, $3, $4) RETURNING id"
 
-	var id int
 	rows, err := r.dbPool.Query(
 		context.Background(),
 		sql,
@@ -54,6 +53,7 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 	}
 	defer rows.Close()
 
+	var id int
 	for rows.Next() {
 		if err := rows.Scan(&id); err != nil {
 			return nil, errors.New("Não foi possível encontrar usuário criado.")
@@ -63,7 +63,7 @@ func (r userRepositoryImpl) createUser(data CreateUserDto) (*User, error) {
 	return r.getUserById(id)
 }
 
-func (r userRepositoryImpl) getUserById(id int) (*User, error) {
+func (r userRepository) getUserById(id int) (*User, error) {
 	sql := `
 		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
 		FROM usuarios AS u WHERE u.id = $1
@@ -99,7 +99,7 @@ func (r userRepositoryImpl) getUserById(id int) (*User, error) {
 	return user, nil
 }
 
-func (r userRepositoryImpl) getUserByCodeOrEmail(code string, email string) (*User, error) {
+func (r userRepository) getUserByCodeOrEmail(code string, email string) (*User, error) {
 	sql := `
 		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
 		FROM usuarios AS u
@@ -136,7 +136,7 @@ func (r userRepositoryImpl) getUserByCodeOrEmail(code string, email string) (*Us
 	return user, nil
 }
 
-func (r userRepositoryImpl) getUsers() ([]User, error) {
+func (r userRepository) getUsers() ([]User, error) {
 	sql := `
 		SELECT id, nome, email, senha, codigo_registro, permissoes, data_criacao, data_atualizacao
 		FROM usuarios
