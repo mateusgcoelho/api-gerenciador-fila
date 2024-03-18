@@ -25,4 +25,9 @@ func SetupQueuesRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 		permissions.OnlyPermission(permissions.PermissionSeeAllQueues),
 		handleGetQueues(queueRepository),
 	)
+	r.GET(
+		"/:id",
+		permissions.OnlyPermission(permissions.PermissionSeeAllQueues),
+		handleGetQueueById(queueRepository),
+	)
 }

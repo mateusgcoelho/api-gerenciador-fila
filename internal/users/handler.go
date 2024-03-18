@@ -46,7 +46,7 @@ func handleGetUsers(userRepository IUserRepository) gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, utils.DefaultResponse{
+		c.JSON(http.StatusOK, utils.DefaultResponse{
 			Data: users,
 		})
 	}
