@@ -37,8 +37,6 @@ func InitializeDatabase() error {
 
 	dbPool = newDbPool
 
-	runMigrations()
-
 	return nil
 }
 

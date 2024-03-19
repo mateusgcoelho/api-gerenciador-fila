@@ -8,7 +8,7 @@ import (
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
-func OnlyAuthenticated(authRepository IAuthRepository) gin.HandlerFunc {
+func OnlyAuthenticated(authDao IAuthDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.Request.Header.Get("Authorization")
 
@@ -21,7 +21,7 @@ func OnlyAuthenticated(authRepository IAuthRepository) gin.HandlerFunc {
 			return
 		}
 
-		payload, err := authRepository.ValidateToken(bearerToken[1])
+		payload, err := authDao.ValidateToken(bearerToken[1])
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, utils.DefaultResponse{
 				Message: "Não foi possível validar token de autenticação.",

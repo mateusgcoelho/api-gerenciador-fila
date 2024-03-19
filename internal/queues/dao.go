@@ -7,23 +7,23 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type IQueueRepository interface {
+type IQueueDao interface {
 	createQueue(data CreateQueueDto) (*Queue, error)
 	getQueueById(id int) (*Queue, error)
 	getQueues() ([]Queue, error)
 }
 
-type queueRepository struct {
+type queueDao struct {
 	dbPool *pgxpool.Pool
 }
 
-func NewQueueRepository(dbPool *pgxpool.Pool) IQueueRepository {
-	return queueRepository{
+func NewQueueDao(dbPool *pgxpool.Pool) IQueueDao {
+	return queueDao{
 		dbPool: dbPool,
 	}
 }
 
-func (r queueRepository) createQueue(data CreateQueueDto) (*Queue, error) {
+func (r queueDao) createQueue(data CreateQueueDto) (*Queue, error) {
 	query := `
 		INSERT INTO filas (nome, senha_atual) VALUES ($1, $2) RETURNING id
 	`
@@ -47,7 +47,7 @@ func (r queueRepository) createQueue(data CreateQueueDto) (*Queue, error) {
 	return r.getQueueById(id)
 }
 
-func (r queueRepository) getQueueById(id int) (*Queue, error) {
+func (r queueDao) getQueueById(id int) (*Queue, error) {
 	sql := `
 		SELECT id, nome, senha_atual, data_criacao, data_atualizacao
 		FROM filas AS f WHERE f.id = $1
@@ -80,7 +80,7 @@ func (r queueRepository) getQueueById(id int) (*Queue, error) {
 	return queue, nil
 }
 
-func (r queueRepository) getQueues() ([]Queue, error) {
+func (r queueDao) getQueues() ([]Queue, error) {
 	sql := `
 		SELECT id, nome, senha_atual, data_criacao, data_atualizacao
 		FROM filas

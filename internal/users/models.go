@@ -1,14 +1,18 @@
 package users
 
-import "time"
+import (
+	"time"
+
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal/persons"
+)
 
 type User struct {
-	Id              int       `json:"id"`
-	Nome            string    `json:"nome"`
-	Email           string    `json:"email"`
-	Senha           string    `json:"-"`
-	CodigoRegistro  string    `json:"codigoRegistro"`
-	Permissoes      int       `json:"-"`
-	DataCriacao     time.Time `json:"dataCriacao"`
-	DataAtualizacao time.Time `json:"dataAtualizacao"`
+	Id              int            `json:"id"`
+	Email           string         `json:"email"`
+	CodigoRegistro  string         `json:"codigoRegistro"`
+	Senha           string         `json:"-"`
+	Permissoes      int            `json:"-"`
+	Pessoa          persons.Person `json:"pessoa"`
+	DataCriacao     time.Time      `json:"dataCriacao"`
+	DataAtualizacao time.Time      `json:"dataAtualizacao"`
 }

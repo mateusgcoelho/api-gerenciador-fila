@@ -8,7 +8,7 @@ import (
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
-func handleCreateQueue(queueRepository IQueueRepository) gin.HandlerFunc {
+func handleCreateQueue(queueDao IQueueDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var data CreateQueueDto
 		if err := c.ShouldBindJSON(&data); err != nil {
@@ -19,7 +19,7 @@ func handleCreateQueue(queueRepository IQueueRepository) gin.HandlerFunc {
 			return
 		}
 
-		queue, err := queueRepository.createQueue(data)
+		queue, err := queueDao.createQueue(data)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),
@@ -34,7 +34,7 @@ func handleCreateQueue(queueRepository IQueueRepository) gin.HandlerFunc {
 	}
 }
 
-func handleGetQueueById(queueRepository IQueueRepository) gin.HandlerFunc {
+func handleGetQueueById(queueDao IQueueDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		queueId, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
@@ -43,7 +43,7 @@ func handleGetQueueById(queueRepository IQueueRepository) gin.HandlerFunc {
 			})
 		}
 
-		queue, err := queueRepository.getQueueById(queueId)
+		queue, err := queueDao.getQueueById(queueId)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),
@@ -64,9 +64,9 @@ func handleGetQueueById(queueRepository IQueueRepository) gin.HandlerFunc {
 	}
 }
 
-func handleGetQueues(queueRepository IQueueRepository) gin.HandlerFunc {
+func handleGetQueues(queueDao IQueueDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		queues, err := queueRepository.getQueues()
+		queues, err := queueDao.getQueues()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),

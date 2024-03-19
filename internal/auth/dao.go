@@ -9,21 +9,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type IAuthRepository interface {
+type IAuthDao interface {
 	GenerateJwtToken(payload JwtPayloadDto) (string, error)
 	HashPassword(password string) (string, error)
 	ValidateToken(bearerToken string) (JwtPayloadDto, error)
 	ComparePasswords(hashedPassword, attemptedPassword string) bool
 }
 
-type authRepositoryImpl struct {
+type authDao struct {
 }
 
-func NewAuthRepository() IAuthRepository {
-	return authRepositoryImpl{}
+func NewAuthDao() IAuthDao {
+	return authDao{}
 }
 
-func (r authRepositoryImpl) GenerateJwtToken(payload JwtPayloadDto) (string, error) {
+func (r authDao) GenerateJwtToken(payload JwtPayloadDto) (string, error) {
 	claims := JwtPayloadDto{
 		Id:         payload.Id,
 		Permissoes: payload.Permissoes,
@@ -37,7 +37,7 @@ func (r authRepositoryImpl) GenerateJwtToken(payload JwtPayloadDto) (string, err
 	return token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
 }
 
-func (r authRepositoryImpl) HashPassword(password string) (string, error) {
+func (r authDao) HashPassword(password string) (string, error) {
 	passwordHashed, err := bcrypt.GenerateFromPassword([]byte(password), 6)
 	if err != nil {
 		return "", errors.New("Não foi possível criptografar senha.")
@@ -46,11 +46,11 @@ func (r authRepositoryImpl) HashPassword(password string) (string, error) {
 	return string(passwordHashed), nil
 }
 
-func (r authRepositoryImpl) ComparePasswords(hashedPassword, password string) bool {
+func (r authDao) ComparePasswords(hashedPassword, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }
 
-func (r authRepositoryImpl) ValidateToken(bearerToken string) (JwtPayloadDto, error) {
+func (r authDao) ValidateToken(bearerToken string) (JwtPayloadDto, error) {
 	token, err := jwt.ParseWithClaims(bearerToken, &JwtPayloadDto{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET_KEY")), nil
 	})

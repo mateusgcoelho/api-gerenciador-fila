@@ -8,7 +8,7 @@ import (
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
-func handleCreateUser(userRepository IUserRepository) gin.HandlerFunc {
+func handleCreateUser(userDao IUserDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var data CreateUserDto
 		if err := c.ShouldBindJSON(&data); err != nil {
@@ -19,7 +19,15 @@ func handleCreateUser(userRepository IUserRepository) gin.HandlerFunc {
 			return
 		}
 
-		user, err := userRepository.createUser(data)
+		if err := data.Validate(); err != nil {
+			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
+				Message: err.Error(),
+				Data:    nil,
+			})
+			return
+		}
+
+		user, err := userDao.createUser(data)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),
@@ -35,9 +43,9 @@ func handleCreateUser(userRepository IUserRepository) gin.HandlerFunc {
 	}
 }
 
-func handleGetUsers(userRepository IUserRepository) gin.HandlerFunc {
+func handleGetUsers(userDao IUserDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		users, err := userRepository.getUsers()
+		users, err := userDao.getUsers()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),
@@ -52,7 +60,7 @@ func handleGetUsers(userRepository IUserRepository) gin.HandlerFunc {
 	}
 }
 
-func handleLogin(userRepository IUserRepository, authRepository auth.IAuthRepository) gin.HandlerFunc {
+func handleLogin(userDao IUserDao, authDao auth.IAuthDao) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var data LoginDto
 		if err := c.ShouldBindJSON(&data); err != nil {
@@ -63,7 +71,7 @@ func handleLogin(userRepository IUserRepository, authRepository auth.IAuthReposi
 			return
 		}
 
-		user, err := userRepository.getUserByCodeOrEmail("", data.Email)
+		user, err := userDao.getUser("", data.Email, "", "")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
 				Message: err.Error(),
@@ -80,7 +88,7 @@ func handleLogin(userRepository IUserRepository, authRepository auth.IAuthReposi
 			return
 		}
 
-		isValid := authRepository.ComparePasswords(user.Senha, data.Senha)
+		isValid := authDao.ComparePasswords(user.Senha, data.Senha)
 
 		if !isValid {
 			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
@@ -90,7 +98,7 @@ func handleLogin(userRepository IUserRepository, authRepository auth.IAuthReposi
 			return
 		}
 
-		tokenJwt, err := authRepository.GenerateJwtToken(auth.JwtPayloadDto{
+		tokenJwt, err := authDao.GenerateJwtToken(auth.JwtPayloadDto{
 			Id:         user.Id,
 			Permissoes: user.Permissoes,
 		})

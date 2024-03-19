@@ -9,25 +9,25 @@ import (
 
 func SetupQueuesRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 	var (
-		authRepository  auth.IAuthRepository = auth.NewAuthRepository()
-		queueRepository IQueueRepository     = NewQueueRepository(dbPool)
+		authDao  auth.IAuthDao = auth.NewAuthDao()
+		queueDao IQueueDao     = NewQueueDao(dbPool)
 	)
 
-	r := g.Group("/queues", auth.OnlyAuthenticated(authRepository))
+	r := g.Group("/queues", auth.OnlyAuthenticated(authDao))
 
 	r.POST(
 		"/",
 		permissions.OnlyPermission(permissions.PermissionCreateQueue),
-		handleCreateQueue(queueRepository),
+		handleCreateQueue(queueDao),
 	)
 	r.GET(
 		"/",
 		permissions.OnlyPermission(permissions.PermissionSeeAllQueues),
-		handleGetQueues(queueRepository),
+		handleGetQueues(queueDao),
 	)
 	r.GET(
 		"/:id",
 		permissions.OnlyPermission(permissions.PermissionSeeAllQueues),
-		handleGetQueueById(queueRepository),
+		handleGetQueueById(queueDao),
 	)
 }

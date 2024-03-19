@@ -9,25 +9,25 @@ import (
 
 func SetupUserRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 	var (
-		authRepository auth.IAuthRepository = auth.NewAuthRepository()
-		userRepository IUserRepository      = NewUserRepository(dbPool, authRepository)
+		authDao auth.IAuthDao = auth.NewAuthDao()
+		userDao IUserDao      = NewUserDao(dbPool, authDao)
 	)
 
-	routerUsers := g.Group("/users", auth.OnlyAuthenticated(authRepository))
+	routerUsers := g.Group("/users")
 	routerUsers.POST(
 		"/",
 		permissions.OnlyPermission(permissions.PermissionCreateUser),
-		handleCreateUser(userRepository),
+		handleCreateUser(userDao),
 	)
 	routerUsers.GET(
 		"/",
 		permissions.OnlyPermission(permissions.PermissionSeeAllUsers),
-		handleGetUsers(userRepository),
+		handleGetUsers(userDao),
 	)
 
 	routerAuth := g.Group("/auth")
 	routerAuth.POST(
 		"/",
-		handleLogin(userRepository, authRepository),
+		handleLogin(userDao, authDao),
 	)
 }

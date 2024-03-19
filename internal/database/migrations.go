@@ -2,11 +2,12 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 )
 
-func runMigrations() error {
+func RunMigrations() error {
 	migrationFile, err := os.ReadFile("migrations.sql")
 	if err != nil {
 		return err
@@ -17,7 +18,7 @@ func runMigrations() error {
 	for _, query := range queries {
 		_, err := dbPool.Exec(context.Background(), query)
 		if err != nil {
-			return err
+			fmt.Println(err.Error())
 		}
 	}
 
