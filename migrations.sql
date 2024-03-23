@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   pessoa_id INT NULL,
   responsavel_id INT NOT NULL,
   data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  data_finalizacao TIMESTAMP NULL,
   data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE atendimentos

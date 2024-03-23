@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/auth"
@@ -79,7 +78,6 @@ func (r userDao) createUser(data CreateUserDto) (*User, error) {
 		data.Email, passwordHashed, data.CodigoRegistro, personId,
 	)
 	if err != nil {
-		fmt.Print(err)
 		return nil, errors.New("Não foi possível criar usuário.")
 	}
 
