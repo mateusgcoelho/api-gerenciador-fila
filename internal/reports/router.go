@@ -15,4 +15,5 @@ func SetupReportsRoutes(g *gin.Engine, dbPool *pgxpool.Pool) {
 	r := g.Group("/reports", auth.OnlyAuthenticated(authDao))
 
 	r.POST("/", handleCreateReport(reportDao))
+	r.GET("/", handleGetReports(reportDao))
 }

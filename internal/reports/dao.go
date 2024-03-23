@@ -13,6 +13,7 @@ type IReportDao interface {
 	createReport(data CreateReportDto) (*Report, error)
 	getReportById(id int) (*Report, error)
 	verifyIfUsersExists(usersId []int) error
+	getReports() ([]Report, error)
 }
 
 func NewReportDao(dbPool *pgxpool.Pool) IReportDao {
@@ -134,4 +135,40 @@ func (r *reportDao) verifyIfUsersExists(usersId []int) error {
 	}
 
 	return nil
+}
+
+func (r *reportDao) getReports() ([]Report, error) {
+	query := `
+		SELECT id, senha, pessoa_id, responsavel_id, data_criacao, data_finalizacao, data_atualizacao
+		FROM atendimentos
+	`
+
+	rows, err := r.dbPool.Query(context.Background(), query)
+	if err != nil {
+		return nil, errors.New("Não foi possível realizar busca de atendimentos.")
+	}
+	defer rows.Close()
+
+	var reports []Report = []Report{}
+
+	for rows.Next() {
+		report := Report{}
+
+		err := rows.Scan(
+			&report.Id,
+			&report.Senha,
+			&report.PessoaId,
+			&report.ResponsavelId,
+			&report.DataCriacao,
+			&report.DataFinalizacao,
+			&report.DataAtualizacao,
+		)
+		if err != nil {
+			return nil, errors.New("Não foi possível realizar busca de atendimentos.")
+		}
+
+		reports = append(reports, report)
+	}
+
+	return reports, nil
 }

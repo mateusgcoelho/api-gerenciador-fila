@@ -33,3 +33,20 @@ func handleCreateReport(reportDao IReportDao) gin.HandlerFunc {
 		})
 	}
 }
+
+func handleGetReports(reportDao IReportDao) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		reports, err := reportDao.getReports()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
+				Message: err.Error(),
+				Data:    nil,
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, utils.DefaultResponse{
+			Data: reports,
+		})
+	}
+}
