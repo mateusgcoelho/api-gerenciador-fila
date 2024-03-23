@@ -12,6 +12,7 @@ import (
 type IReportDao interface {
 	createReport(data CreateReportDto) (*Report, error)
 	getReportById(id int) (*Report, error)
+	verifyIfUsersExists(usersId []int) error
 }
 
 func NewReportDao(dbPool *pgxpool.Pool) IReportDao {
@@ -29,7 +30,7 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 		return nil, errors.New("Não se pode criar atendimento para si mesmo.")
 	}
 
-	if err := verifyIfUsersExists(r.dbPool, data.PessoaId, data.ResponsavelId); err != nil {
+	if err := r.verifyIfUsersExists([]int{data.PessoaId, data.ResponsavelId}); err != nil {
 		return nil, err
 	}
 
@@ -42,6 +43,8 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 		query,
 		data.PessoaId, data.ResponsavelId, data.Senha,
 	)
+	defer rows.Close()
+
 	if err != nil {
 		return nil, errors.New("Não foi possível criar atendimento.")
 	}
@@ -59,7 +62,7 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 func (r *reportDao) getReportById(id int) (*Report, error) {
 	query := `
 		SELECT id, pessoa_id, responsavel_id, senha, data_finalizacao, data_criacao, data_atualizacao
-		FROM atendimentos WHERE = $1
+		FROM atendimentos WHERE id = $1
 	`
 
 	rows, err := r.dbPool.Query(
@@ -67,12 +70,15 @@ func (r *reportDao) getReportById(id int) (*Report, error) {
 		query,
 		id,
 	)
+	defer rows.Close()
+
 	if err != nil {
 		return nil, errors.New("Não foi possível encontrar atendimento.")
 	}
 
 	var report *Report = nil
 	for rows.Next() {
+		report = &Report{}
 		if err := rows.Scan(
 			&report.Id,
 			&report.PessoaId,
@@ -86,10 +92,10 @@ func (r *reportDao) getReportById(id int) (*Report, error) {
 		}
 	}
 
-	return r.getReportById(id)
+	return report, nil
 }
 
-func verifyIfUsersExists(dbPool *pgxpool.Pool, usersId ...int) error {
+func (r *reportDao) verifyIfUsersExists(usersId []int) error {
 	query := `
 		SELECT id FROM usuarios WHERE id IN ($1)
 	`
@@ -101,7 +107,7 @@ func verifyIfUsersExists(dbPool *pgxpool.Pool, usersId ...int) error {
 
 	whereIds := strings.Join(userIdsStr, ",")
 
-	rows, err := dbPool.Query(
+	rows, err := r.dbPool.Query(
 		context.Background(),
 		query,
 		whereIds,
@@ -109,14 +115,22 @@ func verifyIfUsersExists(dbPool *pgxpool.Pool, usersId ...int) error {
 	if err != nil {
 		return errors.New("Não foi possível validar usuários.")
 	}
+	defer rows.Close()
 
-	values, err := rows.Values()
-	if err != nil {
-		return errors.New("Não foi possível validar usuários.")
+	var usersIdFoundeds []int = []int{}
+	for rows.Next() {
+		var id int
+		err := rows.Scan(&id)
+
+		if err != nil {
+			return errors.New("Não foi possível validar usuários.")
+		}
+
+		usersIdFoundeds = append(usersIdFoundeds, id)
 	}
 
-	if len(values) != len(usersId) {
-		return errors.New("Não foi possível encontrar usuário, verifique os ids.")
+	if !(len(usersIdFoundeds) != len(usersId)) {
+		return errors.New("Nem todos os usuários foram encontrados.")
 	}
 
 	return nil
