@@ -54,11 +54,11 @@ func (r userDao) createUser(data CreateUserDto) (*User, error) {
 		}
 	}()
 
-	sql := "INSERT INTO pessoas (nome, telefone) VALUES ($1, $2) RETURNING id"
+	sql := "INSERT INTO pessoas (nome, telefone, cpf) VALUES ($1, $2, $3) RETURNING id"
 	rows, err := tx.Query(
 		context.Background(),
 		sql,
-		data.Nome, data.Telefone,
+		data.Nome, data.Telefone, data.Cpf,
 	)
 	if err != nil {
 		return nil, errors.New("Não foi possível criar usuário.")

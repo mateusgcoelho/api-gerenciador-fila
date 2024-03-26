@@ -30,10 +30,13 @@ CREATE TABLE IF NOT EXISTS atendimentos (
   senha INT NOT NULL,
   pessoa_id INT NULL,
   responsavel_id INT NOT NULL,
+  fila_id INT NOT NULL,
   data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   data_finalizacao TIMESTAMP NULL,
   data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE atendimentos
+ADD CONSTRAINT fk_atendimento_fila FOREIGN KEY (fila_id) REFERENCES filas(id);
 ALTER TABLE atendimentos
 ADD CONSTRAINT fk_atendimento_pessoa FOREIGN KEY (pessoa_id) REFERENCES pessoas(id);
 ALTER TABLE atendimentos

@@ -3,6 +3,7 @@ package reports
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -36,11 +37,28 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 	}
 
 	query := `
+		SELECT senha FROM filas WHERE id = $1
+	`
+
+	rows, err := r.dbPool.Query(context.Background(), query, data.FilaId)
+	fmt.Println(data.FilaId)
+	var senha *int
+	for rows.Next() {
+		if err := rows.Scan(&senha); err != nil {
+			return nil, err
+		}
+	}
+
+	if senha == nil {
+		return nil, errors.New("Não foi possível encontrar a fila para atendimento.")
+	}
+
+	query = `
 		SELECT id FROM atendimentos
-		WHERE data_finalizacao IS NULL AND (pessoa_id = $1 OR responsavel_id = $2)
+		WHERE data_finalizacao IS NULL AND (pessoa_id = $1 OR responsavel_id = $2) FOR UPDATE
 	`
 	var reportIdFounded *int
-	rows, err := r.dbPool.Query(
+	rows, err = r.dbPool.Query(
 		context.Background(),
 		query,
 		data.PessoaId, data.ResponsavelId,
@@ -66,7 +84,7 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 	rows, err = r.dbPool.Query(
 		context.Background(),
 		query,
-		data.PessoaId, data.ResponsavelId, data.Senha,
+		data.PessoaId, data.ResponsavelId, (*senha + 1),
 	)
 	defer rows.Close()
 
