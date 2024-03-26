@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/queues"
@@ -30,7 +32,17 @@ func corsMiddleware() gin.HandlerFunc {
 
 func Initialize(dbPool *pgxpool.Pool) {
 	r := gin.Default()
-	r.Use(corsMiddleware())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"PUT", "POST", "GET", "DELETE", "PATCH"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowOriginFunc: func(origin string) bool {
+			return origin == "https://github.com"
+		},
+		MaxAge: 12 * time.Hour,
+	}))
 
 	serverPort := fmt.Sprintf(":%s", os.Getenv("SERVER_PORT"))
 
