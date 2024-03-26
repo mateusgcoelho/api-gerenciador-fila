@@ -1,4 +1,4 @@
-# A fazeres Hoje
+# A fazeres
 
 - [x] Adicionar validacao de atendimento
-- [ ] Alterar sistema de migrations
+- [x] Alterar sistema de migrations
