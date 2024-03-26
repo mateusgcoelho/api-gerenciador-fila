@@ -36,10 +36,34 @@ func (r *reportDao) createReport(data CreateReportDto) (*Report, error) {
 	}
 
 	query := `
+		SELECT id FROM atendimentos
+		WHERE data_finalizacao IS NULL AND (pessoa_id = $1 OR responsavel_id = $2)
+	`
+	var reportIdFounded *int
+	rows, err := r.dbPool.Query(
+		context.Background(),
+		query,
+		data.PessoaId, data.ResponsavelId,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		if err := rows.Scan(&reportIdFounded); err != nil {
+			return nil, err
+		}
+	}
+
+	if reportIdFounded != nil {
+		return nil, errors.New("Existe um atendimento em andamento.")
+	}
+
+	query = `
 		INSERT INTO atendimentos (pessoa_id, responsavel_id, senha) VALUES ($1, $2, $3) RETURNING id
 	`
 
-	rows, err := r.dbPool.Query(
+	rows, err = r.dbPool.Query(
 		context.Background(),
 		query,
 		data.PessoaId, data.ResponsavelId, data.Senha,
