@@ -1,81 +1,50 @@
 package queues
 
 import (
+	"context"
+	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
+	database "github.com/mateusgcoelho/api-gerenciador-fila/database/sqlc"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
-func handleCreateQueue(queueDao IQueueDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var data CreateQueueDto
-		if err := c.ShouldBindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "Verifique o corpo da requisição.",
-				Data:    nil,
-			})
+func HandleCreateQueue(r *database.DatabaseRepository) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var createQueueRequest CreateQueueRequest
+		if err := ctx.ShouldBindJSON(&createQueueRequest); err != nil {
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(fmt.Sprintf("Corpo da requisição invalido. %v", err), nil))
 			return
 		}
 
-		queue, err := queueDao.createQueue(data)
+		queue, err := r.CreateQueue(context.Background(), createQueueRequest.Name)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-				Data:    nil,
-			})
+			ctx.JSON(http.StatusInternalServerError, utils.BuildResponse(err.Error(), nil))
 			return
 		}
 
-		c.JSON(http.StatusCreated, utils.DefaultResponse{
-			Data: queue,
-		})
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", queue))
 	}
 }
 
-func handleGetQueueById(queueDao IQueueDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		queueId, err := strconv.Atoi(c.Param("id"))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "Id de fila inválido.",
-			})
-		}
-
-		queue, err := queueDao.getQueueById(queueId)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-			})
+func HandleGetQueues(r *database.DatabaseRepository) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var req GetQueuesRequest
+		if err := ctx.ShouldBindQuery(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(fmt.Sprintf("Requisição invalida. %v", err), nil))
 			return
 		}
 
-		if queue == nil {
-			c.JSON(http.StatusNotFound, utils.DefaultResponse{
-				Message: "Fila não encontrada.",
-			})
-			return
+		arg := database.GetQueuesParams{
+			Limit:  req.PageSize,
+			Offset: (req.Page - 1) * req.PageSize,
 		}
-
-		c.JSON(http.StatusCreated, utils.DefaultResponse{
-			Data: queue,
-		})
-	}
-}
-
-func handleGetQueues(queueDao IQueueDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		queues, err := queueDao.getQueues()
+		queues, err := r.GetQueues(context.Background(), arg)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-			})
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(err.Error(), nil))
 			return
 		}
-
-		c.JSON(http.StatusOK, utils.DefaultResponse{
-			Data: queues,
-		})
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", queues))
 	}
 }

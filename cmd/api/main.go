@@ -1,25 +1,24 @@
 package main
 
 import (
-	"log"
+	"context"
 
-	"github.com/joho/godotenv"
-	"github.com/mateusgcoelho/api-gerenciador-fila/internal/database"
-	"github.com/mateusgcoelho/api-gerenciador-fila/internal/router"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/lib/pq"
+	db "github.com/mateusgcoelho/api-gerenciador-fila/database/sqlc"
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal"
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Erro ao carregar variaveis de ambiente.")
+	conn, err := pgxpool.New(context.Background(), "postgres://postgres:Docker@localhost:5432?sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+	dbRepository := db.NewDatabaseRepository(conn)
+
+	server := internal.Server{
+		DatabaseRepository: dbRepository,
 	}
 
-	if err := database.InitializeDatabase(); err != nil {
-		log.Fatal(err.Error())
-	}
-
-	dbPool := database.GetDbPool()
-
-	router.Initialize(dbPool)
-
-	defer dbPool.Close()
+	server.Run(":3333")
 }

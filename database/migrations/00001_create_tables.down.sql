@@ -1,4 +1,0 @@
-DROP TABLE IF EXISTS atendimentos;
-DROP TABLE IF EXISTS filas;
-DROP TABLE IF EXISTS usuarios;
-DROP TABLE IF EXISTS pessoas;

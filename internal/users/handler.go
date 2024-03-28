@@ -1,110 +1,87 @@
 package users
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mateusgcoelho/api-gerenciador-fila/internal/auth"
+	"github.com/jackc/pgx/v5/pgtype"
+	database "github.com/mateusgcoelho/api-gerenciador-fila/database/sqlc"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
-func handleCreateUser(userDao IUserDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var data CreateUserDto
-		if err := c.ShouldBindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "Verifique o corpo da requisição.",
-				Data:    nil,
-			})
+func HandleCreateUser(r *database.DatabaseRepository) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var req CreateUserRequest
+		if err := ctx.ShouldBindJSON(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(fmt.Sprintf("Corpo da requisição invalido. %v", err), nil))
 			return
 		}
 
-		if err := data.Validate(); err != nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: err.Error(),
-				Data:    nil,
-			})
-			return
-		}
+		var user database.User
 
-		user, err := userDao.createUser(data)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-				Data:    nil,
-			})
-			return
-		}
+		err := r.ExecTx(context.Background(), func(q *database.Queries) error {
+			argPerson := database.CreatePersonParams{
+				Name: req.Name,
+				Cpf: pgtype.Text{
+					String: req.Cpf,
+					Valid:  true,
+				},
+				Phone: pgtype.Text{
+					String: req.Phone,
+					Valid:  true,
+				},
+			}
+			person, err := q.CreatePerson(context.Background(), argPerson)
+			if err != nil {
+				return err
+			}
 
-		c.JSON(http.StatusCreated, utils.DefaultResponse{
-			Message: "Usuário cadastrado com sucesso.",
-			Data:    user,
+			argUser := database.CreateUserParams{
+				Email:    req.Email,
+				Password: req.Password,
+				Code: pgtype.Text{
+					String: req.Code,
+					Valid:  true,
+				},
+				Permissions: 0,
+				PersonID:    person.ID,
+			}
+			user, err = q.CreateUser(context.Background(), argUser)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		})
+
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, utils.BuildResponse(err.Error(), nil))
+			return
+		}
+
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", user))
 	}
 }
 
-func handleGetUsers(userDao IUserDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		users, err := userDao.getUsers()
+func HandleGetUsers(r *database.DatabaseRepository) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		var req GetUsersRequest
+		if err := ctx.ShouldBindQuery(&req); err != nil {
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(fmt.Sprintf("Requisição invalida. %v", err), nil))
+			return
+		}
+
+		arg := database.GetUsersParams{
+			Limit:  req.PageSize,
+			Offset: (req.Page - 1) * req.PageSize,
+		}
+		users, err := r.GetUsers(context.Background(), arg)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-				Data:    nil,
-			})
+			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(err.Error(), nil))
 			return
 		}
-
-		c.JSON(http.StatusOK, utils.DefaultResponse{
-			Data: users,
-		})
-	}
-}
-
-func handleLogin(userDao IUserDao, authDao auth.IAuthDao) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var data LoginDto
-		if err := c.ShouldBindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "Verifique o corpo da requisição.",
-				Data:    nil,
-			})
-			return
-		}
-
-		user, err := userDao.getUser("", data.Email, "", "")
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, utils.DefaultResponse{
-				Message: err.Error(),
-				Data:    nil,
-			})
-			return
-		}
-
-		if user == nil {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "E-mail e/ou senha inválidos.",
-				Data:    nil,
-			})
-			return
-		}
-
-		isValid := authDao.ComparePasswords(user.Senha, data.Senha)
-
-		if !isValid {
-			c.JSON(http.StatusBadRequest, utils.DefaultResponse{
-				Message: "E-mail e/ou senha inválidos.",
-				Data:    nil,
-			})
-			return
-		}
-
-		tokenJwt, err := authDao.GenerateJwtToken(auth.JwtPayloadDto{
-			Id:         user.Id,
-			Permissoes: user.Permissoes,
-		})
-
-		c.JSON(http.StatusOK, utils.DefaultResponse{
-			Data: tokenJwt,
-		})
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", users))
 	}
 }
