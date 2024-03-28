@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgtype"
 	database "github.com/mateusgcoelho/api-gerenciador-fila/database/sqlc"
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal/auth"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/utils"
 )
 
@@ -38,9 +39,14 @@ func HandleCreateUser(r *database.DatabaseRepository) gin.HandlerFunc {
 				return err
 			}
 
+			hashedPassword, err := auth.HashPassword(req.Password)
+			if err != nil {
+				return err
+			}
+
 			argUser := database.CreateUserParams{
 				Email:    req.Email,
-				Password: req.Password,
+				Password: string(hashedPassword),
 				Code: pgtype.Text{
 					String: req.Code,
 					Valid:  true,
@@ -61,7 +67,7 @@ func HandleCreateUser(r *database.DatabaseRepository) gin.HandlerFunc {
 			return
 		}
 
-		ctx.JSON(http.StatusOK, utils.BuildResponse("", user))
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", FromUserEntity(user)))
 	}
 }
 
@@ -82,6 +88,6 @@ func HandleGetUsers(r *database.DatabaseRepository) gin.HandlerFunc {
 			ctx.JSON(http.StatusBadRequest, utils.BuildResponse(err.Error(), nil))
 			return
 		}
-		ctx.JSON(http.StatusOK, utils.BuildResponse("", users))
+		ctx.JSON(http.StatusOK, utils.BuildResponse("", FromListUserEntity(users)))
 	}
 }
