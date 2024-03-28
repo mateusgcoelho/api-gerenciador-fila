@@ -7,10 +7,71 @@ package database
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createReport = `-- name: CreateReport :one
+INSERT INTO reports (number, person_id, responsive_id, queue_id)
+VALUES ($1, $2, $3, $4) RETURNING id, number, person_id, responsive_id, queue_id, finish_at, created_at, updated_at
+`
+
+type CreateReportParams struct {
+	Number       int32       `json:"number"`
+	PersonID     pgtype.Int4 `json:"person_id"`
+	ResponsiveID int32       `json:"responsive_id"`
+	QueueID      int32       `json:"queue_id"`
+}
+
+func (q *Queries) CreateReport(ctx context.Context, arg CreateReportParams) (Report, error) {
+	row := q.db.QueryRow(ctx, createReport,
+		arg.Number,
+		arg.PersonID,
+		arg.ResponsiveID,
+		arg.QueueID,
+	)
+	var i Report
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.PersonID,
+		&i.ResponsiveID,
+		&i.QueueID,
+		&i.FinishAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getReportWithoutAFinish = `-- name: GetReportWithoutAFinish :one
+SELECT id, number, person_id, responsive_id, queue_id, finish_at, created_at, updated_at FROM reports
+WHERE finish_at IS NULL AND (person_id = $1 OR responsive_id = $2) LIMIT 1
+`
+
+type GetReportWithoutAFinishParams struct {
+	PersonID     pgtype.Int4 `json:"person_id"`
+	ResponsiveID int32       `json:"responsive_id"`
+}
+
+func (q *Queries) GetReportWithoutAFinish(ctx context.Context, arg GetReportWithoutAFinishParams) (Report, error) {
+	row := q.db.QueryRow(ctx, getReportWithoutAFinish, arg.PersonID, arg.ResponsiveID)
+	var i Report
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.PersonID,
+		&i.ResponsiveID,
+		&i.QueueID,
+		&i.FinishAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getReports = `-- name: GetReports :many
-SELECT id, email, password, code, permissions, person_id, created_at, updated_at FROM users
+SELECT id, number, person_id, responsive_id, queue_id, finish_at, created_at, updated_at FROM reports
 LIMIT $1 OFFSET $2
 `
 
@@ -19,22 +80,22 @@ type GetReportsParams struct {
 	Offset int32 `json:"offset"`
 }
 
-func (q *Queries) GetReports(ctx context.Context, arg GetReportsParams) ([]User, error) {
+func (q *Queries) GetReports(ctx context.Context, arg GetReportsParams) ([]Report, error) {
 	rows, err := q.db.Query(ctx, getReports, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []User{}
+	items := []Report{}
 	for rows.Next() {
-		var i User
+		var i Report
 		if err := rows.Scan(
 			&i.ID,
-			&i.Email,
-			&i.Password,
-			&i.Code,
-			&i.Permissions,
+			&i.Number,
 			&i.PersonID,
+			&i.ResponsiveID,
+			&i.QueueID,
+			&i.FinishAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	database "github.com/mateusgcoelho/api-gerenciador-fila/database/sqlc"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/queues"
+	"github.com/mateusgcoelho/api-gerenciador-fila/internal/reports"
 	"github.com/mateusgcoelho/api-gerenciador-fila/internal/users"
 )
 
@@ -19,6 +20,9 @@ func (s *Server) Run(port string) {
 
 	router.GET("/queues", queues.HandleGetQueues(s.DatabaseRepository))
 	router.POST("/queues", queues.HandleCreateQueue(s.DatabaseRepository))
+
+	router.GET("/reports", reports.HandleGetReports(s.DatabaseRepository))
+	router.POST("/reports", reports.HandleCreateReport(s.DatabaseRepository))
 
 	router.Run(port)
 }

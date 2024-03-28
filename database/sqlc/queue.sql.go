@@ -27,6 +27,24 @@ func (q *Queries) CreateQueue(ctx context.Context, name string) (Queue, error) {
 	return i, err
 }
 
+const getQueueById = `-- name: GetQueueById :one
+SELECT id, name, actual_number, created_at, updated_at FROM queues
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetQueueById(ctx context.Context, id int32) (Queue, error) {
+	row := q.db.QueryRow(ctx, getQueueById, id)
+	var i Queue
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.ActualNumber,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getQueues = `-- name: GetQueues :many
 SELECT id, name, actual_number, created_at, updated_at FROM queues
 LIMIT $1 OFFSET $2
